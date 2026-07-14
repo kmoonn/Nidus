@@ -1,8 +1,10 @@
 """FastAPI server for Nidus RAG — REST API for indexing and Q&A."""
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .chunker import chunk_documents
@@ -130,3 +132,7 @@ async def ask(req: AskRequest):
             for s in result.sources
         ],
     )
+
+
+# ── Static files (chat UI) ───────────────────────────────────
+app.mount("/", StaticFiles(directory=str(Path(__file__).parent.parent / "static"), html=True), name="static")
