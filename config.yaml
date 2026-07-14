@@ -16,6 +16,7 @@ chunker:
 
 retriever:
   top_k: 5
+  relevance_threshold: 0.50  # distance > 此阈值视为不相关，走自由对话模式
 
 store:
   type: chromadb

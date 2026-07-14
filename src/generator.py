@@ -11,6 +11,10 @@ RAG_SYSTEM_PROMPT = """\
 请用中文回答，并引用信息来源（文件名和页码）。
 """
 
+CHAT_SYSTEM_PROMPT = """\
+你是一个友好的AI助手。用户的问题与已索引的文档无关，请直接用中文回答。
+"""
+
 RAG_USER_TEMPLATE = """\
 参考资料：
 {contexts}
@@ -65,10 +69,25 @@ class Generator:
         Args:
             query: User question.
             contexts: List of retrieved Chunk objects as context.
+                     Empty list means the query is unrelated to documents — free chat mode.
 
         Returns:
             Generated answer string.
         """
+        if not contexts:
+            # Free chat mode — no document context, just answer directly
+            response = self._client.chat.completions.create(
+                model=self._model,
+                messages=[
+                    {"role": "system", "content": CHAT_SYSTEM_PROMPT},
+                    {"role": "user", "content": query},
+                ],
+                temperature=0.7,
+                max_tokens=512,
+            )
+            return response.choices[0].message.content
+
+        # RAG mode — answer with document context
         formatted = _format_contexts(contexts)
         user_message = RAG_USER_TEMPLATE.format(contexts=formatted, query=query)
 
