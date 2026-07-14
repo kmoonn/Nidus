@@ -61,7 +61,7 @@ class Config:
 
     @property
     def docs_dir(self) -> Path:
-        return Path(__file__).parent.parent / "docs"
+        return Path(__file__).parent.parent / "docs" / "files"
 
 
 # Global config singleton — loaded once on first access

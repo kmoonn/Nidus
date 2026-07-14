@@ -22,7 +22,7 @@ class Store:
         self._collection_name = store_cfg["collection_name"]
         self._collection = self._client.get_or_create_collection(
             name=self._collection_name,
-            metadata={"hnsw:space": "cosine"},
+            metadata={"hnsw:space": "cosine"},  # 余弦相似度
         )
 
     @property
