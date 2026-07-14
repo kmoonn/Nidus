@@ -1,1 +1,8 @@
 /.idea
+.ttadk/
+specs/doc_export/
+__pycache__/
+*.pyc
+data/
+.env
+.venv/

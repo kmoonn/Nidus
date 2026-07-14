@@ -1,0 +1,23 @@
+llm:
+  provider: siliconflow
+  base_url: https://api.siliconflow.cn/v1
+  model: deepseek-ai/DeepSeek-V3
+  api_key: ${SILICONFLOW_API_KEY}
+
+embedding:
+  provider: siliconflow
+  model: BAAI/bge-large-zh-v1.5
+  base_url: https://api.siliconflow.cn/v1
+  api_key: ${SILICONFLOW_API_KEY}
+
+chunker:
+  chunk_size: 500
+  chunk_overlap: 50
+
+retriever:
+  top_k: 5
+
+store:
+  type: chromadb
+  persist_directory: data/chroma_db
+  collection_name: nidus_docs
