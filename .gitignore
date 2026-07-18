@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# Virtualenv
+.venv/
+
+# Nidus local data & secrets
+.env
+.nidus/
+
+# OS
+.DS_Store
+.ttadk/
+specs/doc_export/
+/.claude
+.mcp.json
+ai-plugin-lock.json
+ai-plugin.json
