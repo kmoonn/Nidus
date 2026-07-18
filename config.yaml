@@ -1,0 +1,97 @@
+llm:
+  provider: siliconflow
+  base_url: https://api.siliconflow.cn/v1
+  model: deepseek-ai/DeepSeek-V3
+  api_key: ${SILICONFLOW_API_KEY}
+
+embedding:
+  provider: siliconflow
+  model: BAAI/bge-large-zh-v1.5
+  base_url: https://api.siliconflow.cn/v1
+  api_key: ${SILICONFLOW_API_KEY}
+
+reranker:
+  provider: siliconflow
+  base_url: https://api.siliconflow.cn/v1
+  model: BAAI/bge-reranker-v2-m3
+  api_key: ${SILICONFLOW_API_KEY}
+
+chunker:
+  chunk_size: 500
+  chunk_overlap: 50
+
+retriever:
+  top_k: 5
+  relevance_threshold: 0.50  # distance > 此阈值视为不相关，走自由对话模式
+
+# ── Advanced RAG 开关（默认开启，可单独关闭） ──
+advanced:
+  # Pre-retrieval：查询改写。把模糊/口语问题改写为利于检索的具体查询。
+  query_rewriting:
+    enabled: false
+  # Pre-retrieval：查询扩展。生成多个不同角度的查询变体，分头检索后 RRF 融合，提升召回率。
+  query_expansion:
+    enabled: false
+    n_queries: 3          # 生成的查询变体数量（不含原查询）
+  # Pre-retrieval：查询分解。把复合问题拆成多个独立子问题分头检索（与扩展互斥，开启时跳过扩展）。
+  query_decomposition:
+    enabled: false
+  # Pre-retrieval：HyDE。先用 LLM 生成假设回答，再用它做嵌入检索（弥合问题-答案语义鸿沟）。
+  hyde:
+    enabled: false
+  # 索引：分层索引。索引时为每个文档生成摘要存入独立 collection；检索时先查摘要定位文档，再聚焦细检。
+  hierarchical_index:
+    enabled: false
+    summary_top_n: 2     # 摘要层定位的最相关文档数
+  # 检索：混合检索。向量 + BM25 双路召回，RRF 融合（精确关键词 + 语义互补）。
+  hybrid_search:
+    enabled: true
+    bm25_weight: 1.0     # RRF 用，预留
+    vector_weight: 1.0
+  # Post-retrieval：去重。基于字符 n-gram Jaccard 相似度移除高度重复的 chunk（rerank 前）。
+  dedup:
+    enabled: true
+    similarity_threshold: 0.85
+  # Post-retrieval：重排序。用 Cross-Encoder 对 Top-K 重新打分。
+  reranking:
+    enabled: true
+    top_n: 5             # 重排后保留的数量
+  # Post-retrieval：上下文压缩。用 LLM 压缩每个 chunk 只保留与问题相关的核心信息。
+  context_compression:
+    enabled: false
+
+# ── Modular RAG：运行时动态路由 ──
+# Router 用 LLM 把问题分为 simple/complex/time_sensitive，按路由走不同模块链。
+modular:
+  router:
+    enabled: true
+  # complex 路径走查询分解（把复合问题拆成多个子问题分头检索）。
+  query_decomposition:
+    enabled: true
+  # complex 路径可选 HyDE（用假设回答做嵌入检索，弥合问题-答案语义鸿沟）。
+  hyde:
+    enabled: false
+  # 检索：向量 + BM25 双路召回，RRF 融合。
+  hybrid_search:
+    enabled: true
+  # Post-retrieval：去重 + 重排序（complex 路径）。
+  dedup:
+    enabled: true
+    similarity_threshold: 0.85
+  reranking:
+    enabled: true
+    top_n: 5
+  # Post-retrieval：上下文压缩（complex 路径）。
+  context_compression:
+    enabled: false
+
+# ── 时效型路径（time_sensitive）：Web 搜索 ──
+# 关闭时 Router 退回 simple/complex 二分类；开启后时效型问题走 DuckDuckGo 检索。
+web_search:
+  enabled: false
+  max_results: 5
+
+store:
+  type: chromadb
+  persist_directory: data/chroma_db
+  collection_name: nidus_docs

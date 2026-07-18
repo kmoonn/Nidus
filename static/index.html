@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nidus RAG</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f5f7;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        }
+        .header .logo {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 700;
+        }
+        .header h1 { font-size: 18px; font-weight: 600; }
+        .header .subtitle { font-size: 12px; opacity: .6; margin-left: 8px; }
+        .header .status {
+            margin-left: auto;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: rgba(255,255,255,.1);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .header .status .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+        .header .status .dot.ok { background: #22c55e; }
+
+        /* Chat area */
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 14px 18px;
+            border-radius: 16px;
+            line-height: 1.6;
+            font-size: 14px;
+            word-break: break-word;
+            animation: fadeIn .3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: #6366f1;
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+        .message.assistant {
+            align-self: flex-start;
+            background: #fff;
+            color: #1f2937;
+            border: 1px solid #e5e7eb;
+            border-bottom-left-radius: 4px;
+        }
+        .message.assistant .sources {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #f0f0f0;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+        .message.assistant .sources span {
+            display: inline-block;
+            background: #f3f4f6;
+            padding: 2px 8px;
+            border-radius: 6px;
+            margin-right: 4px;
+            margin-bottom: 4px;
+            color: #6b7280;
+        }
+
+        .message.error {
+            align-self: center;
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+            text-align: center;
+            max-width: 90%;
+        }
+
+        .typing {
+            align-self: flex-start;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            border-bottom-left-radius: 4px;
+            padding: 14px 18px;
+            display: flex; gap: 6px; align-items: center;
+        }
+        .typing .dot {
+            width: 8px; height: 8px;
+            background: #d1d5db;
+            border-radius: 50%;
+            animation: blink 1.4s infinite;
+        }
+        .typing .dot:nth-child(2) { animation-delay: .2s; }
+        .typing .dot:nth-child(3) { animation-delay: .4s; }
+        @keyframes blink {
+            0%, 80%, 100% { opacity: .3; }
+            40% { opacity: 1; }
+        }
+
+        /* Welcome */
+        .welcome {
+            text-align: center;
+            color: #9ca3af;
+            padding: 80px 20px;
+        }
+        .welcome .icon { font-size: 48px; margin-bottom: 16px; }
+        .welcome h2 { font-size: 20px; color: #374151; margin-bottom: 8px; }
+        .welcome p { font-size: 14px; margin-bottom: 24px; }
+        .welcome .hints {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+        }
+        .welcome .hints button {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all .2s;
+        }
+        .welcome .hints button:hover {
+            border-color: #6366f1;
+            color: #6366f1;
+        }
+
+        /* Input area */
+        .input-area {
+            padding: 16px 24px;
+            background: #fff;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 10px;
+        }
+        .input-area input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color .2s;
+        }
+        .input-area input:focus {
+            border-color: #6366f1;
+        }
+        .input-area input:disabled {
+            background: #f9fafb;
+            cursor: not-allowed;
+        }
+        .input-area button {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity .2s;
+        }
+        .input-area button:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+        .input-area button:hover:not(:disabled) {
+            opacity: .9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="logo">N</div>
+    <h1>Nidus RAG</h1>
+    <span class="subtitle">Light Extensible Agentic RAG</span>
+    <div class="status">
+        <div class="dot" id="statusDot"></div>
+        <span id="statusText">连接中...</span>
+    </div>
+</div>
+
+<div class="chat-area" id="chatArea">
+    <div class="welcome" id="welcome">
+        <div class="icon">🔮</div>
+        <h2>向文档提问</h2>
+        <p>基于 RAG 检索增强生成，回答来源于已索引的文档</p>
+        <div class="hints">
+            <button onclick="ask('碳达峰的目标年份是什么？')">碳达峰的目标年份是什么？</button>
+            <button onclick="ask('中国能源转型的主要方向有哪些？')">能源转型的主要方向</button>
+            <button onclick="ask('碳中和和碳达峰有什么关系？')">碳中和和碳达峰的关系</button>
+            <button onclick="ask('新能源发电量占比情况如何？')">新能源发电量占比</button>
+        </div>
+    </div>
+</div>
+
+<div class="input-area">
+    <input type="text" id="queryInput" placeholder="输入你的问题..." autocomplete="off">
+    <button id="sendBtn" onclick="send()">发送</button>
+</div>
+
+<script>
+    const API_BASE = window.location.origin;
+    let connected = false;
+
+    // Check health on load
+    async function checkHealth() {
+        try {
+            const res = await fetch(`${API_BASE}/health`);
+            const data = await res.json();
+            connected = true;
+            document.getElementById('statusDot').classList.add('ok');
+            document.getElementById('statusText').textContent = `${data.chunks_indexed} chunks indexed`;
+        } catch {
+            connected = false;
+            document.getElementById('statusDot').classList.remove('ok');
+            document.getElementById('statusText').textContent = '未连接';
+        }
+    }
+    checkHealth();
+
+    // Enter key to send
+    document.getElementById('queryInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') send();
+    });
+
+    function ask(question) {
+        document.getElementById('queryInput').value = question;
+        send();
+    }
+
+    async function send() {
+        const input = document.getElementById('queryInput');
+        const btn = document.getElementById('sendBtn');
+        const question = input.value.trim();
+        if (!question) return;
+
+        // Hide welcome
+        const welcome = document.getElementById('welcome');
+        if (welcome) welcome.remove();
+
+        // Add user message
+        addMessage('user', question);
+        input.value = '';
+        input.disabled = true;
+        btn.disabled = true;
+
+        // Show typing indicator
+        const typing = addTyping();
+
+        try {
+            const res = await fetch(`${API_BASE}/ask`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question }),
+            });
+            const data = await res.json();
+            typing.remove();
+            addMessage('assistant', data.answer, data.sources);
+        } catch (err) {
+            typing.remove();
+            addMessage('error', '请求失败，请检查后端服务是否运行');
+        } finally {
+            input.disabled = false;
+            btn.disabled = false;
+            input.focus();
+        }
+    }
+
+    function addMessage(role, content, sources) {
+        const chat = document.getElementById('chatArea');
+        const div = document.createElement('div');
+        div.className = `message ${role}`;
+        div.textContent = content;
+
+        if (sources && sources.length > 0) {
+            const srcDiv = document.createElement('div');
+            srcDiv.className = 'sources';
+            srcDiv.innerHTML = '📖 ' + sources.map(s =>
+                `<span>${s.source} P${s.page}</span>`
+            ).join('');
+            div.appendChild(srcDiv);
+        }
+
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function addTyping() {
+        const chat = document.getElementById('chatArea');
+        const div = document.createElement('div');
+        div.className = 'typing';
+        div.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+        return div;
+    }
+</script>
+</body>
+</html>

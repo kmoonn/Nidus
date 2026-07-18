@@ -1,7 +1,13 @@
-/.claude
-/.ttadk
 /.idea
+.ttadk/
+specs/doc_export/
+__pycache__/
+*.pyc
 .DS_Store
+data/
+.env
+.venv/
+/.claude
 .mcp.json
 ai-plugin-lock.json
 ai-plugin.json
